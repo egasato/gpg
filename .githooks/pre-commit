@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+
+# Check the required programs
+for prog in git awk file grep; do
+	if ! command -v $prog > /dev/null; then
+		echo "WARNING: Missing \"$prog\" command; pre-commit cannot check for private keys." >&2
+		echo 'WARNING: Pre-commit check will not check for private keys.' >&2
+		exit 0
+	fi
+done
+
+# List the staged files
+staged=$(git ls-files -s | awk '{print $4}')
+
+# Check if any of them are a private keys
+status=0
+for file in $staged; do
+	if git show :$file | file - | grep -F key | grep -q -F private; then
+		echo "ERROR: The file \"$file\" contains a private key." >&2
+		status=1
+	fi
+done
+exit $status
